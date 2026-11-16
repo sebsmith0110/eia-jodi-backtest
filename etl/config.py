@@ -1,7 +1,14 @@
 """Source definitions and settings shared by every pipeline stage."""
 
 import os
+import re
 from pathlib import Path
+
+from dotenv import load_dotenv
+
+# Read .env locally. Never overrides variables already set, so on ECS the task
+# definition / Secrets Manager values win (and .env isn't in the image anyway).
+load_dotenv()
 
 # Where raw downloads land locally. Mirrors the S3 layout: raw/<source>/<download date>/
 DATA_DIR = Path(os.getenv("DATA_DIR", "data"))
@@ -21,7 +28,21 @@ JODI_COUNTRY = "US"
 JODI_PRODUCT = "CRUDEOIL"
 JODI_UNIT = "KBD"  # thousand barrels per day
 JODI_FLOWS = {"TOTIMPSB": "imports", "TOTEXPSB": "exports"}
-JODI_MISSING = "-"  # missing values are the literal string "-"
+# Markers for "no number" in OBS_VALUE: "-" and ".." (not available), "x" (not applicable),
+# "N/A" (2002-2008 files only). Any other text makes the read fail loudly, on purpose.
+JODI_MISSING = ["-", "..", "x", "N/A"]
+# Exact columns every JODI primary CSV must have (any order).
+JODI_COLUMNS = [
+    "REF_AREA",
+    "TIME_PERIOD",
+    "ENERGY_PRODUCT",
+    "FLOW_BREAKDOWN",
+    "UNIT_MEASURE",
+    "OBS_VALUE",
+    "ASSESSMENT_CODE",
+]
+# Name raw JODI files are saved under (extract) and read back by (transform): primary_2025.csv
+JODI_FILE_PATTERN = re.compile(r"primary_\d{4}\.csv")
 
 
 def jodi_url(year: int, current_year: int) -> str:
