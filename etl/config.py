@@ -23,7 +23,7 @@ DATABASE_URL = os.getenv(
 # Annual "Primary" CSVs, no login needed.
 # https://www.jodidata.org/oil/database/data-downloads.aspx
 JODI_BASE_URL = "https://www.jodidata.org/_resources/files/downloads/oil-data/annual-csv/primary"
-JODI_START_YEAR = 2015
+JODI_START_YEAR = 2002  # JODI's first month is Jan 2002
 JODI_COUNTRY = "US"
 JODI_PRODUCT = "CRUDEOIL"
 JODI_UNIT = "KBD"  # thousand barrels per day
