@@ -5,6 +5,8 @@ in the month sequence, values in a plausible range, and fresh-enough latest
 month. Each result is logged; a failed critical check stops the load.
 """
 
+import polars as pl
 
-def run() -> None:
+
+def run(clean: pl.DataFrame) -> None:
     raise NotImplementedError("Step 5")

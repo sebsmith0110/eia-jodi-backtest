@@ -5,9 +5,9 @@ from etl import extract, load, quality, transform
 
 def main() -> None:
     extract.run()
-    transform.run()
-    quality.run()
-    load.run()
+    clean = transform.run()
+    quality.run(clean)
+    load.run(clean)
 
 
 if __name__ == "__main__":

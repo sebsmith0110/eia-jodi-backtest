@@ -19,6 +19,7 @@ dependencies = [
 dev = [
     "pytest>=9.2.0",
     "ruff>=0.17.5",
+    "xlsxwriter>=3.3.1",
 ]
 
 [tool.uv]

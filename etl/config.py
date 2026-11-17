@@ -54,6 +54,7 @@ def jodi_url(year: int, current_year: int) -> str:
 # --- EIA ----------------------------------------------------------------------
 # All series are US total crude oil, thousand barrels per day.
 # https://www.eia.gov/petroleum/data.php
+EIA_UNIT = "Thousand Barrels per Day"  # must appear in each file's value header
 EIA_XLS_URL = "https://www.eia.gov/dnav/pet/hist_xls/{series_id}{freq}.xls"
 EIA_SERIES = {
     # series_id: (flow, source label, frequency code used in the download URL)
