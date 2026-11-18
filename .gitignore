@@ -17,4 +17,6 @@ wheels/
 # Local data and secrets (raw downloads live in S3 in production)
 data/*
 !data/.gitkeep
+# Small clean-table snapshot the hosted dashboard reads (etl/snapshot.py)
+!data/snapshot/
 .env

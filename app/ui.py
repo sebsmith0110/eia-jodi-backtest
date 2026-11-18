@@ -7,7 +7,7 @@ import polars as pl
 import streamlit as st
 
 from app import prep, schemes
-from etl import metrics, transform
+from etl import config, metrics, snapshot, transform
 
 SOURCES = ["eia_monthly", "eia_weekly"]
 LABELS = {
@@ -34,10 +34,18 @@ PERIODS = [
 
 @st.cache_data
 def load() -> tuple[pl.DataFrame, pl.DataFrame, str]:
-    """Clean table, comparison with outliers (scored on full history), download date."""
-    clean = transform.run()
+    """Clean table, comparison with outliers (scored on full history), download date.
+
+    Built from the raw downloads when they exist (locally), else read from the
+    committed snapshot (on Streamlit Community Cloud).
+    """
+    if (config.RAW_DIR / "jodi").is_dir():
+        clean = transform.run()
+        downloaded = transform.get_latest_raw_dir("jodi").name
+    else:
+        clean, downloaded = snapshot.load()
     flagged = metrics.flag_anomalies(metrics.compare(clean))
-    return clean, flagged, transform.get_latest_raw_dir("jodi").name
+    return clean, flagged, downloaded
 
 
 def fmt_month(month: dt.date) -> str:

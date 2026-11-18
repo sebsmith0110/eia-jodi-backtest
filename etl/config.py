@@ -13,6 +13,9 @@ load_dotenv()
 # Where raw downloads land locally. Mirrors the S3 layout: raw/<source>/<download date>/
 DATA_DIR = Path(os.getenv("DATA_DIR", "data"))
 RAW_DIR = DATA_DIR / "raw"
+# Committed copy of the clean table, so the dashboard runs where raw data isn't
+# available (Streamlit Community Cloud). File name: clean_<download date>.csv
+SNAPSHOT_DIR = DATA_DIR / "snapshot"
 
 # Postgres connection: local Docker in development, RDS in production.
 DATABASE_URL = os.getenv(

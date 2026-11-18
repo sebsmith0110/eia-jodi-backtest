@@ -35,7 +35,8 @@ with left, st.container(border=True):
     st.subheader("How are errors measured?", anchor=False)
     st.markdown(
         "- **Error** = EIA − JODI. Positive value means EIA over-estimated.\n"
-        "- **MAPE / MAE**: Mean Annual (Percentage) Error, ignoring direction.\n"
+        "- **MAPE / MAE**: Mean Absolute Percentage Error / Mean Absolute Error, ignoring "
+        "direction.\n"
         f"- **Bias test**: a sign test on months over vs under JODI. Biased when "
         f"p < {prep.LEAN_P:g} and |median error| ≥ {prep.LEAN_MIN_PCT:g}%.\n"
         f"- **Trailing mean error**: the average error over the previous {prep.ROLLING_MONTHS} "
@@ -56,7 +57,8 @@ with right, st.container(border=True):
         "- **JODI mirrors PSM** in many months (within 1 kbd), consistent with JODI's US "
         "series being sourced from PSM. PSM's accuracy against JODI is overstated; WPSR is "
         "the independent test.\n"
-        "- **PSM history is revised**, so focus should be directed towards EIA weekly data (WPSR).\n"
+        "- **PSM history is revised**, so focus should be directed towards EIA weekly data "
+        "(WPSR).\n"
         "- **Pre-2015 exports** were tiny under the export ban, so % errors there are "
         "large on small volumes; use kbd for that period.\n"
         "- **Very large |z|** comes from a near-flat trailing window (e.g. JODI mirroring "
