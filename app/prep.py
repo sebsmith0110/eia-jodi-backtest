@@ -11,21 +11,13 @@ import polars as pl
 
 PRESETS = [
     "Last 12 months",
+    "Last 3 years",
     "Last 5 years",
-    "Since 2023",
-    "2018–2022",
     "Since 2015",
-    "All since 2002",
+    "Since 2002",
     "Custom",
 ]
 DEFAULT_PRESET = "Since 2015"
-# Why the two regime periods exist: WPSR imports' error doubled from 2023 (MAPE
-# about 1.5% to 3.1%), and 2018-2022 is the settled baseline after the export ban's
-# aftermath and before that jump. Shown as help text next to the presets.
-PRESET_NOTES = {
-    "Since 2023": "Recent regime: WPSR imports' error roughly doubled from 2023.",
-    "2018–2022": "Stable baseline: after exports settled post-ban, before the 2023 jump.",
-}
 
 # Rolling bias line on the bias chart: 12 months smooths out one-off misses.
 ROLLING_MONTHS = 12
@@ -50,21 +42,18 @@ def add_months(month: dt.date, n: int) -> dt.date:
 
 
 def preset_range(preset: str, first: dt.date, last: dt.date) -> tuple[dt.date, dt.date]:
-    """(start, end) months for a date-range preset, kept within first..last.
+    """(start, end) months for a date-range preset; every preset ends at `last`.
 
-    Most presets run to `last`, the newest month with data; "2018–2022" is a fixed
-    window that ends in Dec 2022.
+    The start never goes before `first`, the oldest month with data.
     """
-    ranges = {
-        "Last 12 months": (add_months(last, -11), last),
-        "Last 5 years": (add_months(last, -59), last),
-        "Since 2023": (dt.date(2023, 1, 1), last),
-        "2018–2022": (dt.date(2018, 1, 1), dt.date(2022, 12, 1)),
-        "Since 2015": (dt.date(2015, 1, 1), last),
-        "All since 2002": (first, last),
+    starts = {
+        "Last 12 months": add_months(last, -11),
+        "Last 3 years": add_months(last, -35),
+        "Last 5 years": add_months(last, -59),
+        "Since 2015": dt.date(2015, 1, 1),
+        "Since 2002": first,
     }
-    start, end = ranges[preset]
-    return max(start, first), min(end, last)
+    return max(starts[preset], first), last
 
 
 def in_range(df: pl.DataFrame, start: dt.date, end: dt.date) -> pl.DataFrame:

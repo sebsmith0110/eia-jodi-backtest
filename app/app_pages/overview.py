@@ -35,7 +35,6 @@ preset = c_range.selectbox(
     index=prep.PRESETS.index(prep.DEFAULT_PRESET),
     key="preset",
     persist_state="session",
-    help="  \n".join(f"**{name}**: {note}" for name, note in prep.PRESET_NOTES.items()),
 )
 if preset == "Custom":
     picked = c_range.date_input(
@@ -202,7 +201,7 @@ with right, st.container(border=True):
     head.subheader(f"Does {focus_name} lean high or low?", anchor=False)
     show_single = toggle.toggle("Monthly errors", value=False)
     fig = go.Figure()
-    fig.add_hline(y=0, line=dict(color=ui.AXIS, width=1))
+    ui.zero_line(fig)
     for source in sources:
         rows = rolling.filter(pl.col("eia_source") == source)
         if show_single:
@@ -231,7 +230,9 @@ with right, st.container(border=True):
     if show_single:
         ui.add_outliers(fig, selected.filter("is_anomaly"), diff_col)
     ui.shade_periods(fig, flow, start, end)
-    y_title = "EIA − JODI (%)" if units == "%" else "EIA − JODI (kbd)"
+    if units == "%":
+        fig.update_yaxes(ticksuffix="%")
+    y_title = "EIA − JODI" if units == "%" else "EIA − JODI (kbd)"
     ui.show_chart(ui.style(fig, y_title, TOP_CHART_HEIGHT), alt="Trailing mean error")
 
 # --- row 2: levels | accuracy | outliers --------------------------------------
@@ -293,7 +294,9 @@ with c_acc, st.container(border=True, height="stretch"):
             tickangle=0,
         )
         fig.update_yaxes(rangemode="tozero")
-        y_label = f"Annual {size_name} ({'%' if units == '%' else 'kbd'})"
+        if units == "%":
+            fig.update_yaxes(ticksuffix="%")
+        y_label = f"Annual {size_name}" if units == "%" else f"Annual {size_name} (kbd)"
         fig = ui.style(fig, y_label, BOTTOM_CHART_HEIGHT, dates=False)
         fig.update_layout(margin_b=44)  # room for the two-line "2026 / YTD" tick
         ui.show_chart(fig, alt=f"Annual {size_name}")

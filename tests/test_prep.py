@@ -52,11 +52,10 @@ def test_add_months_crosses_year_boundaries(month, n, expected):
     ("preset", "expected"),
     [
         ("Last 12 months", (dt.date(2025, 9, 1), AUG)),
+        ("Last 3 years", (dt.date(2023, 9, 1), AUG)),
         ("Last 5 years", (dt.date(2021, 9, 1), AUG)),
-        ("Since 2023", (dt.date(2023, 1, 1), AUG)),
-        ("2018–2022", (dt.date(2018, 1, 1), dt.date(2022, 12, 1))),
         ("Since 2015", (dt.date(2015, 1, 1), AUG)),
-        ("All since 2002", (dt.date(2002, 1, 1), AUG)),
+        ("Since 2002", (dt.date(2002, 1, 1), AUG)),
     ],
 )
 def test_preset_range(preset, expected):
@@ -70,24 +69,11 @@ def test_preset_range_never_goes_before_the_first_month():
     )
 
 
-def test_preset_range_never_goes_past_the_latest_month():
-    # Data that stops in mid-2021 cuts the fixed 2018-2022 window short.
-    last = dt.date(2021, 6, 1)
-    assert prep.preset_range("2018–2022", first=dt.date(2002, 1, 1), last=last) == (
-        dt.date(2018, 1, 1),
-        last,
-    )
-
-
 def test_every_preset_except_custom_has_a_range():
     for preset in prep.PRESETS:
         if preset != "Custom":
             start, end = prep.preset_range(preset, first=dt.date(2002, 1, 1), last=AUG)
             assert start <= end
-
-
-def test_every_preset_note_names_a_real_preset():
-    assert set(prep.PRESET_NOTES) <= set(prep.PRESETS)
 
 
 def test_in_range_includes_both_ends():

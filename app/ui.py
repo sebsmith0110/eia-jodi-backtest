@@ -103,6 +103,12 @@ def shade_periods(fig: go.Figure, flow: str, start: dt.date, end: dt.date) -> No
             )
 
 
+def zero_line(fig: go.Figure) -> None:
+    """Draw y = 0 as a dark target line, so zero error reads as the goal."""
+    # layer="below" keeps lines crossing zero visible on top of it.
+    fig.add_hline(y=0, line=dict(color=INK, width=2), layer="below")
+
+
 def add_outliers(fig: go.Figure, rows: pl.DataFrame, y: str) -> None:
     """Ring each outlier month, with its z-score on hover."""
     if rows.is_empty():

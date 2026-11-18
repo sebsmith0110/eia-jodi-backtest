@@ -21,31 +21,32 @@ left, right = st.columns(2, gap="large")
 with left, st.container(border=True):
     st.subheader("What is compared?", anchor=False)
     st.markdown(
-        "EIA's US crude **import and export** estimates against **JODI Oil** (US, CRUDEOIL, "
-        "TOTIMPSB/TOTEXPSB), in thousand barrels per day (kbd).\n\n"
-        "- **WPSR** (EIA weekly) is the first print, available within days and well ahead "
-        "of JODI. It is the primary subject. Spot checks against EIA's WPSR archive show "
-        "the weekly history holds first-release values.\n"
+        "EIA's US crude **import and export** estimates against **JODI Oil**"
+        ", in thousand barrels per day (kbd).\n\n"
+        "- **WPSR** (EIA weekly) is the first print, available around 5 days after a Friday, "
+        "and well before JODI monthly data. It is the primary subject of this dashboard.\n"
         "- **PSM** (EIA monthly) is published later and revised; it is available for "
         "comparison.\n"
         "- WPSR weekly rates are aggregated to calendar months, day-weighted across month "
-        "boundaries, complete months only."
+        "boundaries"
     )
 
 with left, st.container(border=True):
     st.subheader("How are errors measured?", anchor=False)
     st.markdown(
-        "- **Error** = EIA − JODI; positive means EIA overstated.\n"
-        "- **MAPE / MAE**: the average size of the error, in % or kbd, ignoring direction.\n"
+        "- **Error** = EIA − JODI. Positive value means EIA over-estimated.\n"
+        "- **MAPE / MAE**: Mean Annual (Percentage) Error, ignoring direction.\n"
         f"- **Bias test**: a sign test on months over vs under JODI. Biased when "
         f"p < {prep.LEAN_P:g} and |median error| ≥ {prep.LEAN_MIN_PCT:g}%.\n"
-        f"- **Trailing mean error**: the average error over the last {prep.ROLLING_MONTHS} "
+        f"- **Trailing mean error**: the average error over the previous {prep.ROLLING_MONTHS} "
         "months, to show sustained leans.\n"
         f"- **Outliers**: % error more than {metrics.ANOMALY_Z:g}σ from the same series' "
         f"trailing {metrics.ANOMALY_WINDOW}-month mean (minimum "
         f"{metrics.ANOMALY_MIN_HISTORY} months of history), with |error| ≥ "
         f"{metrics.ANOMALY_MIN_PCT:g}% and ≥ {metrics.ANOMALY_MIN_KBD:g} kbd. Scored on "
-        "full history, so the date range never changes which months are flagged.\n"
+        "full history, so the date range never changes which months are flagged. "
+        "This is an estimate of what an 'anomaly' would be, but would ideally need definition from"
+        " market analysts.\n"
         "- **Annual figures** use whole calendar years inside the range, plus year-to-date."
     )
 
@@ -55,7 +56,7 @@ with right, st.container(border=True):
         "- **JODI mirrors PSM** in many months (within 1 kbd), consistent with JODI's US "
         "series being sourced from PSM. PSM's accuracy against JODI is overstated; WPSR is "
         "the independent test.\n"
-        "- **PSM history is revised**, so it is not the first print traders saw.\n"
+        "- **PSM history is revised**, so focus should be directed towards EIA weekly data (WPSR).\n"
         "- **Pre-2015 exports** were tiny under the export ban, so % errors there are "
         "large on small volumes; use kbd for that period.\n"
         "- **Very large |z|** comes from a near-flat trailing window (e.g. JODI mirroring "
@@ -74,11 +75,7 @@ with right, st.container(border=True):
         overview_range = prep.preset_range(overview_preset, first_month, end_month)
     same = f"Same as Overview ({ui.fmt_month(overview_range[0])}–{ui.fmt_month(overview_range[1])})"
     named = [p for p in prep.PRESETS if p != "Custom"]
-    period = st.selectbox(
-        "Period",
-        [same, *named],
-        help="  \n".join(f"**{name}**: {note}" for name, note in prep.PRESET_NOTES.items()),
-    )
+    period = st.selectbox("Period", [same, *named])
     start, end = (
         overview_range if period == same else prep.preset_range(period, first_month, end_month)
     )
