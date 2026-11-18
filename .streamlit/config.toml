@@ -1,0 +1,16 @@
+# "Paper & Ink": warm paper background, oxblood for WPSR (the primary series), navy
+# for PSM, warm grey for JODI. Matches SCHEMES["Paper & Ink"] in app/schemes.py.
+[theme]
+base = "light"
+primaryColor = "#A4282B"
+linkColor = "#A4282B"
+backgroundColor = "#F7F4EE"
+secondaryBackgroundColor = "#FFFDF8"
+textColor = "#1B1F24"
+borderColor = "#DDD6CA"
+# Compact spacing so the overview fits one 1920x1080 screen without scrolling.
+paddingTop = "0.5rem"
+paddingBottom = "0.5rem"
+# h3 is each card's question title, so it is larger than body text.
+headingFontSizes = ["26px", "21px", "19px", "16px", "14px", "12px"]
+metricValueFontSize = "2.6rem"
