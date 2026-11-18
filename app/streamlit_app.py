@@ -35,4 +35,3 @@ page = st.navigation(
     position="top",
 )
 page.run()
-    
