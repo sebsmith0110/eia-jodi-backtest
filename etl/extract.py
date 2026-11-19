@@ -3,7 +3,7 @@
 Each dated folder is a complete set for its source, because transform reads
 only the newest folder. A new folder is only written when at least one file's
 content differs from the newest existing set, so re-running the job on a day
-with no new release stores nothing new.
+with no new release stores nothing new. Run on its own: python -m etl.extract
 """
 
 import hashlib
@@ -103,3 +103,7 @@ def _hashes(files: dict[str, bytes]) -> dict[str, str]:
 def _folder_hashes(folder: Path) -> dict[str, str]:
     """SHA-256 of each file in a saved download folder, keyed by file name."""
     return _hashes({p.name: p.read_bytes() for p in folder.iterdir() if p.is_file()})
+
+
+if __name__ == "__main__":
+    run()
