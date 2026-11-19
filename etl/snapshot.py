@@ -11,13 +11,22 @@ import polars as pl
 from etl import config, transform
 
 
-def save(clean: pl.DataFrame, downloaded: str) -> Path:
-    """Write the clean table as clean_<downloaded>.csv, replacing any older snapshot."""
+def save(clean: pl.DataFrame, downloaded: str) -> Path | None:
+    """Write the clean table as clean_<downloaded>.csv, replacing any older snapshot.
+
+    Returns None without writing when the table matches the current snapshot,
+    so a fresh download with no new numbers doesn't rename the file (and make
+    a pointless commit in the scheduled refresh).
+    """
     config.SNAPSHOT_DIR.mkdir(parents=True, exist_ok=True)
-    for old in config.SNAPSHOT_DIR.glob("clean_*.csv"):
+    old_files = list(config.SNAPSHOT_DIR.glob("clean_*.csv"))
+    text = clean.write_csv()
+    if len(old_files) == 1 and old_files[0].read_text(encoding="utf-8") == text:
+        return None
+    for old in old_files:
         old.unlink()
     path = config.SNAPSHOT_DIR / f"clean_{downloaded}.csv"
-    clean.write_csv(path)
+    path.write_text(text, encoding="utf-8", newline="")
     return path
 
 
@@ -36,7 +45,7 @@ def load() -> tuple[pl.DataFrame, str]:
 def main() -> None:
     """Rebuild the snapshot from the latest raw downloads."""
     path = save(transform.run(), transform.get_latest_raw_dir("jodi").name)
-    print(f"Wrote {path}")
+    print(f"Wrote {path}" if path else "Snapshot unchanged, nothing written")
 
 
 if __name__ == "__main__":
