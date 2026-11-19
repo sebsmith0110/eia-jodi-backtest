@@ -247,6 +247,34 @@ def test_calendar_years_year_to_date_only_when_the_range_reaches_the_latest_data
     assert ytd is None
 
 
+# --- year_ticks ----------------------------------------------------------------
+
+
+def test_year_ticks_labels_every_year_on_a_short_range():
+    # Since 2015 (the default) keeps a label for every year.
+    years = list(range(2015, 2027))
+
+    assert prep.year_ticks(years) == years
+
+
+def test_year_ticks_thins_a_long_range_and_keeps_the_latest_year():
+    # Since 2002: 25 years would crowd the axis; every 5th, ending on 2026 (YTD).
+    ticks = prep.year_ticks(list(range(2002, 2027)))
+
+    assert ticks == [2006, 2011, 2016, 2021, 2026]
+
+
+def test_year_ticks_uses_the_smallest_step_that_fits():
+    # With room for 6 labels, 12 years go every 2nd year rather than every 5th.
+    ticks = prep.year_ticks(list(range(2015, 2027)), max_ticks=6)
+
+    assert ticks == [2016, 2018, 2020, 2022, 2024, 2026]
+
+
+def test_year_ticks_handles_no_years():
+    assert prep.year_ticks([]) == []
+
+
 def test_calendar_years_year_to_date_needs_january_in_range():
     complete, ytd = prep.calendar_years(dt.date(2026, 3, 1), AUG, latest=AUG)
 
