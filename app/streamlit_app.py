@@ -5,13 +5,21 @@ Two pages: an Overview that answers the key questions on one screen, and Method 
 data. Shared pieces live in app/ui.py; numbers come from etl.metrics and app.prep.
 """
 
+import os
 import sys
 from pathlib import Path
 
 import streamlit as st
 
 # `streamlit run` only puts app/ on the import path, not the project root.
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+# Streamlit only reloads changed modules inside app/ or on PYTHONPATH, so without
+# this a running app (e.g. on Streamlit Cloud after a push) keeps the old etl/ code
+# in memory while app/ gets the new code, and the two stop matching.
+os.environ["PYTHONPATH"] = os.pathsep.join(
+    p for p in (str(ROOT / "etl"), os.environ.get("PYTHONPATH", "")) if p
+)
 
 st.set_page_config(page_title="EIA vs JODI backtest", layout="wide")
 
