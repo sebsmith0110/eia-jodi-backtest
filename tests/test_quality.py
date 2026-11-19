@@ -92,16 +92,32 @@ def test_required_fields_fails_on_a_null_source():
     assert result.detail == "nulls in {'source': 1}"
 
 
-def test_duplicates_lists_each_repeated_key_once():
-    table = pl.concat([good(), good().filter(pl.col("month") == AUG)])
+def test_duplicates_counts_extra_rows_and_months():
+    # August copied once for all 3 sources, and JODI's August a third time.
+    table = pl.concat(
+        [good(), good().filter(pl.col("month") == AUG), clean((AUG, "imports", "jodi", 6500.0))]
+    )
 
     result = quality.check_duplicates(table)
 
-    assert not result.passed
+    assert result.status == "FAIL"
+    assert result.detail.startswith("4 extra rows across 3 months, 0 with conflicting values")
+
+
+def test_duplicates_flags_copies_that_disagree():
+    table = pl.concat([good(), clean((AUG, "imports", "jodi", 9999.0))])
+
+    result = quality.check_duplicates(table)
+
     assert result.detail == (
-        "3 duplicated keys: 2026-08-01 eia_monthly imports, "
-        "2026-08-01 eia_weekly imports, 2026-08-01 jodi imports"
+        "1 extra rows across 1 months, 1 with conflicting values: 2026-08-01 jodi imports 2 True"
     )
+
+
+def test_a_null_and_a_number_for_the_same_month_conflict():
+    table = clean((AUG, "imports", "jodi", 6500.0), (AUG, "imports", "jodi", None))
+
+    assert quality.duplicated_months(table)["conflicting"].to_list() == [True]
 
 
 def test_completeness_finds_a_month_missing_from_the_middle():
@@ -417,3 +433,52 @@ def test_no_annotations_outside_actions(monkeypatch, capsys):
     quality.annotate_github([quality.CheckResult("x", False, True, "y")])
 
     assert capsys.readouterr().out == ""
+
+
+# --- duplicates in the logs, and logging crashes --------------------------------
+
+
+def test_row_counts_logs_conflicting_duplicates_per_series():
+    table = pl.concat(
+        [
+            good(),
+            clean((AUG, "imports", "jodi", 9999.0)),  # conflicts
+            clean((AUG, "imports", "eia_weekly", 6500.0)),  # exact copy
+        ]
+    )
+
+    counts = quality.row_counts(table).select("source", "duplicate_rows", "conflicting_duplicates")
+
+    assert counts.rows() == [("eia_monthly", 0, 0), ("eia_weekly", 1, 0), ("jodi", 1, 1)]
+
+
+def test_a_log_gains_new_columns_without_losing_old_rows(tmp_path):
+    path = tmp_path / "counts.csv"
+    quality.append_csv(path, pl.DataFrame({"run_at": ["day 1"], "rows": [3]}))
+
+    quality.append_csv(path, pl.DataFrame({"run_at": ["day 2"], "rows": [4], "new_count": [1]}))
+
+    log = pl.read_csv(path)
+    assert log.columns == ["run_at", "rows", "new_count"]
+    assert log.rows() == [("day 1", 3, None), ("day 2", 4, 1)]
+
+
+def test_a_crash_before_the_checks_is_logged_and_keeps_the_source_details(tmp_path, capsys):
+    quality.run(good(), latest_week=LATEST_WEEK, today=TODAY, log_dir=tmp_path)
+
+    quality.log_crash(tmp_path, ValueError("1 duplicate weeks in EIA weekly imports: [...]"))
+
+    status = json.loads((tmp_path / "status.json").read_text())
+    assert not status["passed"]
+    assert status["problems"][0]["detail"].startswith("1 duplicate weeks")
+    assert status["sources"]["jodi"]["latest"] == "2026-09-01"
+    last = pl.read_csv(tmp_path / "checks.csv").row(-1, named=True)
+    assert (last["check"], last["status"]) == ("pipeline", "FAIL")
+
+
+def test_a_crash_on_the_very_first_run_is_still_logged(tmp_path):
+    quality.log_crash(tmp_path, OSError("download failed"))
+
+    status = json.loads((tmp_path / "status.json").read_text())
+    assert status["sources"] == {}
+    assert status["problems"][0]["detail"] == "download failed"

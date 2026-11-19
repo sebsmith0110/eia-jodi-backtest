@@ -578,5 +578,5 @@ def test_weekly_raises_on_a_duplicate_week():
         ]
     )
 
-    with pytest.raises(ValueError, match=r"Duplicate weeks .*2026, 9, 11"):
+    with pytest.raises(ValueError, match=r"1 duplicate weeks .*2026, 9, 11"):
         transform_eia_weekly(raw, "imports")

@@ -68,7 +68,7 @@ def run(
     anything is raised.
     """
     today = today or dt.date.today()
-    run_at = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    run_at = now_utc()
     schema = check_schema(clean)
     if not schema.passed:
         # The other checks assume the expected columns, so they'd crash rather than report.
@@ -118,8 +118,15 @@ def report(counts: pl.DataFrame, results: list[CheckResult]) -> str:
 
 def row_counts(clean: pl.DataFrame) -> pl.DataFrame:
     """Per series: rows, first and last month, and counts of missing months,
-    duplicate rows and null values. One row per series, as logged each run."""
+    duplicate rows (extra copies of a month), conflicting duplicates (months whose
+    copies disagree on the value) and null values. One row per series, as logged."""
     gaps = missing_months(clean).group_by(SERIES).agg(missing_months=pl.len())
+    conflicts = (
+        duplicated_months(clean)
+        .filter(pl.col("conflicting"))
+        .group_by(SERIES)
+        .agg(conflicting_duplicates=pl.len())
+    )
     return (
         clean.group_by(SERIES)
         .agg(
@@ -130,13 +137,16 @@ def row_counts(clean: pl.DataFrame) -> pl.DataFrame:
             null_values=pl.col("value_kbd").null_count(),
         )
         .join(gaps, on=SERIES, how="left")
+        .join(conflicts, on=SERIES, how="left")
         .select(
             *SERIES,
             "rows",
             "first_month",
             "last_month",
-            pl.col("missing_months").fill_null(0),  # series with no gaps aren't in `gaps`
+            # Series with nothing found aren't in gaps / conflicts, so they come out null.
+            pl.col("missing_months").fill_null(0),
             "duplicate_rows",
+            pl.col("conflicting_duplicates").fill_null(0),
             "null_values",
         )
         .sort(SERIES)
@@ -196,6 +206,29 @@ def write_status(
     (log_dir / "status.json").write_text(json.dumps(status, indent=2) + "\n", encoding="utf-8")
 
 
+def log_crash(log_dir: Path, error: Exception) -> None:
+    """Record a run that failed before the checks could run, e.g. a download that
+    failed or a raw file transform refused (such as duplicate EIA weeks), in
+    checks.csv and status.json. The status keeps the last run's per-source details,
+    since the dashboard still shows that data."""
+    run_at = now_utc()
+    crash = CheckResult("pipeline", passed=False, critical=True, detail=f"{error}")
+    append_check_log(log_dir, run_at, [crash])
+    path = log_dir / "status.json"
+    status = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {"sources": {}}
+    status |= {
+        "checked_at": run_at,
+        "passed": False,
+        "problems": [{"check": crash.name, "status": crash.status, "detail": crash.detail}],
+    }
+    path.write_text(json.dumps(status, indent=2) + "\n", encoding="utf-8")
+
+
+def now_utc() -> str:
+    """The current time in UTC, as logged: 2026-11-19T07:04:12Z."""
+    return dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 def annotate_github(results: list[CheckResult]) -> None:
     """On GitHub Actions, turn each warning and failure into an annotation, so it shows
     on the workflow run's summary page rather than only in its log."""
@@ -208,11 +241,24 @@ def annotate_github(results: list[CheckResult]) -> None:
 
 
 def append_csv(path: Path, table: pl.DataFrame) -> None:
-    """Append rows to a CSV, writing the header only when the file is new."""
+    """Append rows to a CSV, writing the header only when the file is new.
+
+    If the columns have changed since the file was started (a new count added to
+    the log), the file is rewritten with every column, older rows left empty in the
+    new ones, so the log stays one readable table.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
-    new = not path.exists()
+    if path.exists():
+        with path.open(encoding="utf-8") as file:
+            header = file.readline().strip().split(",")
+        if header != table.columns:
+            old = pl.read_csv(path, infer_schema=False)
+            new = table.with_columns(pl.all().cast(pl.String))
+            pl.concat([old, new], how="diagonal").write_csv(path)
+            return
+    new_file = not path.exists()
     with path.open("a", encoding="utf-8", newline="") as file:
-        table.write_csv(file, include_header=new)
+        table.write_csv(file, include_header=new_file)
 
 
 # --- checks -------------------------------------------------------------------
@@ -257,18 +303,21 @@ def check_completeness(clean: pl.DataFrame) -> CheckResult:
 
 
 def check_duplicates(clean: pl.DataFrame) -> CheckResult:
-    """No (month, flow, source) appears twice."""
-    keys = ["month", *SERIES]
-    duplicates = clean.filter(pl.struct(keys).is_duplicated()).select(keys).unique().sort(keys)
+    """No (month, flow, source) appears twice. The detail counts the extra rows and how
+    many duplicated months conflict (copies with different values), which is worse:
+    an exact copy is harmless to drop, but with a conflict nobody knows which is right."""
+    duplicated = duplicated_months(clean)
+    if duplicated.is_empty():
+        return CheckResult("duplicates", passed=True, critical=True, detail="none")
+    extra_rows = duplicated["copies"].sum() - duplicated.height
+    conflicting = duplicated["conflicting"].sum()
     return CheckResult(
         "duplicates",
-        passed=duplicates.is_empty(),
+        passed=False,
         critical=True,
-        detail=(
-            f"{duplicates.height} duplicated keys: {examples(duplicates)}"
-            if duplicates.height
-            else "none"
-        ),
+        detail=f"{extra_rows} extra rows across {duplicated.height} months, "
+        f"{conflicting} with conflicting values: "
+        f"{examples(duplicated.select('month', *SERIES, 'copies', 'conflicting'))}",
     )
 
 
@@ -476,6 +525,18 @@ def add_months(month: dt.date, n: int) -> dt.date:
     """The first of the month n months after (or before, if negative) a month."""
     index = month.year * 12 + month.month - 1 + n
     return dt.date(index // 12, index % 12 + 1, 1)
+
+
+def duplicated_months(clean: pl.DataFrame) -> pl.DataFrame:
+    """Each (month, source, flow) that appears more than once, with how many copies
+    and whether the copies disagree on value_kbd (a null and a number disagree)."""
+    keys = ["month", *SERIES]
+    return (
+        clean.group_by(keys)
+        .agg(copies=pl.len(), conflicting=pl.col("value_kbd").n_unique() > 1)
+        .filter(pl.col("copies") > 1)
+        .sort(keys)
+    )
 
 
 def missing_months(clean: pl.DataFrame) -> pl.DataFrame:

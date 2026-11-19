@@ -199,7 +199,9 @@ def transform_eia_weekly(raw: pl.DataFrame, flow: str) -> pl.DataFrame:
     # in the same month adds up to a full month with the wrong average.
     duplicates = raw.filter(pl.col("date").is_duplicated())["date"].unique().sort()
     if not duplicates.is_empty():
-        raise ValueError(f"Duplicate weeks in EIA weekly {flow}: {duplicates.to_list()}")
+        raise ValueError(
+            f"{len(duplicates)} duplicate weeks in EIA weekly {flow}: {duplicates.to_list()}"
+        )
 
     daily_df = raw.select(
         day=pl.date_ranges(
