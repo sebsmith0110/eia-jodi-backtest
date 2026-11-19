@@ -123,6 +123,14 @@ SCHEMES = {
 }
 ACTIVE = "Paper & Ink"
 
+# Light background tints for the directional-bias tile, keyed by prep.VERDICTS.
+# Translucent, so the same values read as soft tints on light and dark schemes.
+BIAS_TINT = {
+    "Biased high": "rgba(214, 69, 65, 0.14)",
+    "Biased low": "rgba(214, 69, 65, 0.14)",
+    "No significant bias": "rgba(46, 160, 67, 0.14)",
+}
+
 
 def active() -> Scheme:
     """The scheme in use: DASHBOARD_SCHEME if set (for previews), else ACTIVE."""
