@@ -8,6 +8,10 @@ backgroundColor = "#F7F4EE"
 secondaryBackgroundColor = "#FFFDF8"
 textColor = "#1B1F24"
 borderColor = "#DDD6CA"
+# :red[...] / :green[...] text: lighter than Streamlit's defaults, still >= 3:1 on
+# the page for the large directional-bias verdict.
+redTextColor = "#D2605B"
+greenTextColor = "#389455"
 # Compact spacing so the overview fits one 1920x1080 screen without scrolling.
 paddingTop = "0.5rem"
 paddingBottom = "0.5rem"

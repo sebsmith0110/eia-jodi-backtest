@@ -56,3 +56,11 @@ EIA_SERIES = {
     "WCRIMUS2": ("imports", "eia_weekly", "w"),  # Weekly Petroleum Status Report
     "WCREXUS2": ("exports", "eia_weekly", "w"),
 }
+
+
+# --- Quality checks -------------------------------------------------------------
+# Sense limits for any US crude import or export value, in kbd. Real values run
+# from about 2 (pre-2015 exports) to about 10,800, so these only catch gross errors
+# such as a change of units.
+VALUE_MIN_KBD = 0
+VALUE_MAX_KBD = 50_000
