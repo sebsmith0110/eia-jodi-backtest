@@ -1,6 +1,8 @@
 """Shared pieces for the dashboard pages: labels, colours, data loading, chart helpers."""
 
 import datetime as dt
+import json
+from zoneinfo import ZoneInfo
 
 import plotly.graph_objects as go
 import polars as pl
@@ -17,6 +19,7 @@ LABELS = {
     "imports": "Imports",
     "exports": "Exports",
 }
+UK = ZoneInfo("Europe/London")  # check times are stored in UTC, shown in UK time
 SHORT = {"eia_monthly": "PSM", "eia_weekly": "WPSR"}  # for dense sentences
 # Colours come from the active scheme (app/schemes.py). Identity colours stay fixed
 # whatever is filtered; JODI is the benchmark, so it gets a neutral grey.
@@ -32,20 +35,74 @@ PERIODS = [
 ]
 
 
-@st.cache_data
 def load() -> tuple[pl.DataFrame, pl.DataFrame, str]:
     """Clean table, comparison with outliers (scored on full history), download date.
 
     Built from the raw downloads when they exist (locally), else read from the
     committed snapshot (on Streamlit Community Cloud).
     """
-    if (config.RAW_DIR / "jodi").is_dir():
+    local = (config.RAW_DIR / "jodi").is_dir()
+    if local:
+        data_version = tuple(transform.get_latest_raw_dir(s).name for s in ("jodi", "eia"))
+    else:
+        data_version = tuple(p.name for p in sorted(config.SNAPSHOT_DIR.glob("clean_*.csv")))
+    return _load(local, data_version)
+
+
+# The cache is keyed on which files hold the data, so a new download or snapshot is
+# loaded fresh. Without that, a running app keeps serving the first table it loaded,
+# even after the daily refresh pushes a new snapshot.
+@st.cache_data
+def _load(local: bool, data_version: tuple) -> tuple[pl.DataFrame, pl.DataFrame, str]:
+    """load(), cached per data version."""
+    if local:
         clean = transform.run()
         downloaded = transform.get_latest_raw_dir("jodi").name
     else:
         clean, downloaded = snapshot.load()
     flagged = metrics.flag_anomalies(metrics.compare(clean))
     return clean, flagged, downloaded
+
+
+def data_status() -> dict | None:
+    """The last pipeline run's summary (data/logs/status.json, written by etl.quality),
+    or None if the pipeline hasn't run. Not cached: it's tiny and should show a new
+    check as soon as one is pushed."""
+    path = config.LOG_DIR / "status.json"
+    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
+
+
+def show_data_status() -> None:
+    """One small line: each source's latest data and release date, and when the
+    pipeline last checked for new data; a warning badge on any late source, and a
+    second line saying what's late."""
+    status = data_status()
+    if status is None:
+        st.caption("No data check has run yet.")
+        return
+
+    parts = []
+    for source in ("eia_weekly", "eia_monthly", "jodi"):
+        info = status["sources"].get(source)
+        if not info or not info["latest"]:
+            continue
+        latest = dt.date.fromisoformat(info["latest"])
+        period = f"week ending {latest:%d %b}" if source == "eia_weekly" else fmt_month(latest)
+        released = dt.date.fromisoformat(info["released"])
+        text = f"**{LABELS[source]}** {period}, released {released:%d %b}"
+        if info["late"]:
+            text += " :orange-badge[:material/warning: Late]"
+        parts.append(text)
+
+    checked = dt.datetime.fromisoformat(status["checked_at"]).astimezone(UK)
+    parts.append(f"Last checked for new data {checked:%d %b %Y, %H:%M} UK time")
+    if not status["passed"]:
+        parts.append(":red-badge[:material/error: Last check failed: showing earlier data]")
+    st.caption(" · ".join(parts))
+
+    problems = [p["detail"] for p in status["problems"] if p["check"].endswith(" on time")]
+    if problems:
+        st.caption(":orange[" + " · ".join(problems) + "]")
 
 
 def fmt_month(month: dt.date) -> str:

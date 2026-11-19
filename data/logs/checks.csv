@@ -1,0 +1,21 @@
+run_at,check,status,detail
+2026-11-19T16:15:46Z,schema,PASS,6 columns as expected
+2026-11-19T16:15:46Z,required fields,PASS,"no nulls in month, flow, source"
+2026-11-19T16:15:46Z,duplicates,PASS,none
+2026-11-19T16:15:46Z,completeness,PASS,no gaps in 6 series
+2026-11-19T16:15:46Z,missing values,PASS,none
+2026-11-19T16:15:46Z,value range,PASS,"all within 0-50,000 kbd (actual 1.7-10,765.1)"
+2026-11-19T16:15:46Z,rows not shrinking,PASS,"first logged run, nothing to compare"
+2026-11-19T16:15:46Z,eia_weekly on time,PASS,"latest week ends 2026-11-13 (due: week ending 2026-11-13, released Wed 18 Nov)"
+2026-11-19T16:15:46Z,eia_monthly on time,PASS,"latest month Aug 2026 (due: Aug 2026, released Fri 30 Oct)"
+2026-11-19T16:15:46Z,jodi on time,PASS,"latest month Sep 2026 (due: Aug 2026, released Wed 21 Oct)"
+2026-11-19T16:22:38Z,schema,PASS,6 columns as expected
+2026-11-19T16:22:38Z,required fields,PASS,"no nulls in month, flow, source"
+2026-11-19T16:22:38Z,duplicates,PASS,none
+2026-11-19T16:22:38Z,completeness,PASS,no gaps in 6 series
+2026-11-19T16:22:38Z,missing values,PASS,none
+2026-11-19T16:22:38Z,value range,PASS,"all within 0-50,000 kbd (actual 1.7-10,765.1)"
+2026-11-19T16:22:38Z,rows not shrinking,PASS,no series has fewer rows than last run
+2026-11-19T16:22:38Z,eia_weekly on time,PASS,"latest week ends 2026-11-13 (due: week ending 2026-11-13, released Wed 18 Nov)"
+2026-11-19T16:22:38Z,eia_monthly on time,PASS,"latest month Aug 2026 (due: Aug 2026, released Fri 30 Oct)"
+2026-11-19T16:22:38Z,jodi on time,PASS,"latest month Sep 2026 (due: Aug 2026, released Wed 21 Oct)"

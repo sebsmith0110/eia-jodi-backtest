@@ -2,6 +2,7 @@
 
 import os
 import re
+from datetime import date
 from pathlib import Path
 
 # Where raw downloads land: raw/<source>/<download date>/. Override with the
@@ -11,6 +12,9 @@ RAW_DIR = DATA_DIR / "raw"
 # Committed copy of the clean table, so the dashboard runs where raw data isn't
 # available (Streamlit Community Cloud). File name: clean_<download date>.csv
 SNAPSHOT_DIR = DATA_DIR / "snapshot"
+# Quality run logs, appended to every run: counts.csv (row counts per series) and
+# checks.csv (each check's result). Committed, like the snapshot.
+LOG_DIR = DATA_DIR / "logs"
 
 # --- JODI Oil World Database --------------------------------------------------
 # Annual "Primary" CSVs, no login needed.
@@ -64,3 +68,30 @@ EIA_SERIES = {
 # such as a change of units.
 VALUE_MIN_KBD = 0
 VALUE_MAX_KBD = 50_000
+
+# Release schedules, for warning when a source is late. The Refresh data workflow runs
+# daily at 07:00 UTC, before any of these releases, so data released on a day is due by
+# the next morning's run; still missing then means it's a day late. Late only warns.
+#
+# EIA weekly (WPSR): Wednesdays for the week ending the previous Friday; Thursdays in
+# holiday weeks. Week-ending dates of those weeks, 2026-2027, from
+# https://www.eia.gov/petroleum/supply/weekly/schedule.php
+EIA_WEEKLY_HOLIDAY_WEEKS = {
+    date(2026, 1, 16), date(2026, 2, 13), date(2026, 5, 22),
+    date(2026, 9, 4), date(2026, 10, 9), date(2026, 11, 6),
+    date(2027, 1, 15), date(2027, 2, 12), date(2027, 5, 28),
+    date(2027, 7, 2), date(2027, 9, 3), date(2027, 10, 8),
+}  # fmt: skip
+# EIA monthly (PSM): the last weekday of each month, with data for two months earlier
+# (30 Oct 2026 brought Aug 2026; next release 30 Nov 2026).
+EIA_MONTHLY_LAG_MONTHS = 2
+# JODI: first update of each month, with data for two months earlier (19 Nov 2026
+# brought Sep 2026). Dates from https://www.jodidata.org/oil/support/update-calendar.aspx;
+# add each year's when JODI publishes them. Months not listed assume the 22nd.
+JODI_RELEASE_DATES = {
+    date(2026, 1, 21), date(2026, 2, 19), date(2026, 3, 18), date(2026, 4, 21),
+    date(2026, 5, 20), date(2026, 6, 22), date(2026, 7, 21), date(2026, 8, 20),
+    date(2026, 9, 22), date(2026, 10, 21), date(2026, 11, 19), date(2026, 12, 21),
+}  # fmt: skip
+JODI_DEFAULT_RELEASE_DAY = 22
+JODI_LAG_MONTHS = 2

@@ -15,7 +15,8 @@ How well do early-released EIA figures for US crude oil imports and exports line
 ```
 extract   -> raw files saved untouched to data/raw/<source>/<download date>/, only when they changed
 transform -> one long table: month, flow, source, value_kbd (EIA weekly averaged into calendar months)
-quality   -> schema, units, duplicates, gaps, ranges, freshness
+quality   -> schema, duplicates, gaps, nulls, value range, rows never shrinking, sources on time;
+             row counts and results appended to data/logs/counts.csv and checks.csv
 snapshot  -> data/snapshot/clean_<download date>.csv, rewritten only when the numbers changed
 ```
 

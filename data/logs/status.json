@@ -1,0 +1,22 @@
+{
+  "checked_at": "2026-11-19T16:22:38Z",
+  "passed": true,
+  "sources": {
+    "eia_weekly": {
+      "latest": "2026-11-13",
+      "released": "2026-11-18",
+      "late": false
+    },
+    "eia_monthly": {
+      "latest": "2026-08-01",
+      "released": "2026-10-30",
+      "late": false
+    },
+    "jodi": {
+      "latest": "2026-09-01",
+      "released": "2026-11-19",
+      "late": false
+    }
+  },
+  "problems": []
+}

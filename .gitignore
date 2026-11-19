@@ -19,4 +19,6 @@ data/*
 !data/.gitkeep
 # Small clean-table snapshot the hosted dashboard reads (etl/snapshot.py)
 !data/snapshot/
+# Quality run logs: row counts and check results per run (etl/quality.py)
+!data/logs/
 .env

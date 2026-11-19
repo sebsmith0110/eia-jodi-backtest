@@ -1,12 +1,16 @@
 name: Refresh data
 
-# Downloads JODI and EIA, rebuilds the snapshot and commits it only if the
-# numbers changed. The commit redeploys the Streamlit Cloud app.
+# Runs the full pipeline (python -m etl.run): download JODI and EIA, build the
+# clean table, run the quality checks, rebuild the snapshot if the numbers changed.
+# Commits the run logs every day (so the dashboard shows when data was last checked)
+# and the snapshot when it changed; the commit redeploys the Streamlit Cloud app.
+# Late data shows as a warning on the run's summary page and on the dashboard; a
+# failed critical check fails the run, so GitHub emails you, and the snapshot is
+# left as it was.
 on:
   schedule:
-    # Daily 07:00 UTC. Releases land on different days (EIA weekly on
-    # Wednesdays, EIA monthly at month end, JODI mid-month), so daily
-    # catches each one within a day; most runs find nothing and commit nothing.
+    # Daily 07:00 UTC, before any source's release time, so each release is
+    # picked up the next morning (the late-data warnings assume this).
     - cron: "0 7 * * *"
   workflow_dispatch: # "Run workflow" button on the Actions tab
 
@@ -31,22 +35,26 @@ jobs:
       - name: Install dependencies
         run: uv sync --locked
 
-      - name: Download JODI and EIA
-        run: uv run python -m etl.extract
+      - name: Run pipeline
+        run: uv run python -m etl.run
 
-      - name: Rebuild snapshot
-        run: uv run python -m etl.snapshot
-
-      - name: Commit snapshot if it changed
+      # Runs even when the pipeline failed, so the failure is in the logs and on
+      # the dashboard. The job still ends as failed.
+      - name: Commit logs and snapshot
+        if: always()
         run: |
-          git add -A data/snapshot
+          git add -A data/logs data/snapshot
           if git diff --cached --quiet; then
-            echo "No new data"
+            echo "Nothing to commit"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "data: refresh snapshot ($(ls data/snapshot | sed 's/clean_//; s/.csv//'))"
+          if git diff --cached --quiet -- data/snapshot; then
+            git commit -m "data: daily check $(date -u +%Y-%m-%d)"
+          else
+            git commit -m "data: refresh snapshot ($(ls data/snapshot | sed 's/clean_//; s/.csv//'))"
+          fi
           # Someone may have pushed while this ran
           git pull --rebase
           git push

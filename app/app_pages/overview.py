@@ -72,6 +72,8 @@ units = c_units.segmented_control(
     "Units", ["%", "kbd"], default="%", required=True, key="units", persist_state="session"
 )
 
+ui.show_data_status()
+
 if not sources:
     st.warning("Select at least one EIA release.")
     st.stop()
