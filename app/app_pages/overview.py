@@ -10,7 +10,7 @@ import plotly.graph_objects as go
 import polars as pl
 import streamlit as st
 
-from app import prep, schemes, ui
+from app import prep, ui
 from etl import metrics
 
 # Chart heights chosen so the page fits a ~950px-tall browser window.
@@ -125,24 +125,21 @@ worst = (
     .sort(pl.col(diff_col).abs(), descending=True)
     .row(0, named=True)
 )
-BIAS_WORD = {"Biased high": "High", "Biased low": "Low", "No significant bias": "Neutral"}
+# Coloured with Markdown; the shades are redTextColor / greenTextColor in config.toml.
+BIAS_WORD = {
+    "Biased high": ":red[High]",
+    "Biased low": ":red[Low]",
+    "No significant bias": ":green[Neutral]",
+}
 
 
-def metric(column, label: str, value: str, note: str, help: str, tint: str | None = None) -> None:
-    """A headline number with a small grey note under it, optionally on a tinted background.
+def metric(column, label: str, value: str, note: str, help: str) -> None:
+    """A headline number with a small grey note under it.
 
     The note is a caption, not the metric's delta: a delta keeps an indent for its
     arrow even when the arrow is hidden, so it never lines up with the label.
     """
-    key = f"tinted-{label.lower().replace(' ', '-')}" if tint else None
-    if key:
-        # The negative margin cancels the padding, so the text stays lined up
-        # with the untinted tiles beside it.
-        st.html(
-            f"<style>.st-key-{key} {{ background: {tint}; border-radius: 0.5rem;"
-            " padding: 0.4rem 0.6rem; margin: -0.4rem -0.6rem; }</style>"
-        )
-    with column.container(gap=None, key=key):
+    with column.container(gap=None):
         st.metric(label, value, help=help)
         st.caption(note)
 
@@ -178,7 +175,6 @@ with left, st.container(border=True, height="stretch"):
         f"{focus_row['n_above']} over · {focus_row['n_below']} under",
         f"Sign test p = {focus_row['p_value']:.3f}. Biased when p < {prep.LEAN_P:g} and "
         f"|median error| ≥ {prep.LEAN_MIN_PCT:g}%.",
-        tint=schemes.BIAS_TINT[focus_row["verdict"]],
     )
     d, e, f = grid.columns(3)
     metric(
