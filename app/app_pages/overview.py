@@ -292,12 +292,14 @@ with c_acc, st.container(border=True, height="stretch"):
                     hovertemplate="%{y:,.2f} (%{customdata})",
                 )
             )
-        # One tick per year; the partial current year says so on the axis itself.
+        # Every year on short ranges, every 2/5/10 on long ones; the partial current
+        # year says so on the axis itself.
+        tick_years = prep.year_ticks(shown_years)
         fig.update_xaxes(
             hoverformat="d",
             tickmode="array",
-            tickvals=shown_years,
-            ticktext=[f"{y}<br>YTD" if y == ytd_year else str(y) for y in shown_years],
+            tickvals=tick_years,
+            ticktext=[f"{y}<br>YTD" if y == ytd_year else str(y) for y in tick_years],
             tickangle=0,
         )
         fig.update_yaxes(rangemode="tozero")

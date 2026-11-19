@@ -33,6 +33,9 @@ LEAN_MIN_PCT = 0.5
 VERDICTS = ("Biased high", "Biased low", "No significant bias")
 # JODI within this of EIA monthly means JODI almost certainly reused EIA's figure.
 MATCH_KBD = 1.0
+# Annual chart: more labels than this crowd its narrow column on long ranges.
+YEAR_TICKS_MAX = 12
+YEAR_TICK_STEPS = (1, 2, 5, 10)
 
 
 def add_months(month: dt.date, n: int) -> dt.date:
@@ -160,6 +163,22 @@ def calendar_years(start: dt.date, end: dt.date, latest: dt.date) -> tuple[list[
     runs_to_latest = end == latest and end.month != 12
     ytd = end.year if runs_to_latest and start <= dt.date(end.year, 1, 1) else None
     return complete, ytd
+
+
+def year_ticks(years: list[int], max_ticks: int = YEAR_TICKS_MAX) -> list[int]:
+    """The years to label on an annual chart's x axis, at most max_ticks of them.
+
+    Steps through 1, 2, 5 then 10 years, counting back from the latest year so the
+    newest (often year-to-date) point is always labelled.
+    """
+    if not years:
+        return []
+    last = max(years)
+    for step in YEAR_TICK_STEPS:
+        ticks = [y for y in years if (last - y) % step == 0]
+        if len(ticks) <= max_ticks:
+            return ticks
+    return ticks
 
 
 def month_range(
