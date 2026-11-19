@@ -8,9 +8,6 @@ on:
     # Wednesdays, EIA monthly at month end, JODI mid-month), so daily
     # catches each one within a day; most runs find nothing and commit nothing.
     - cron: "0 7 * * *"
-  push:
-    branches: [main]
-    paths-ignore: ["data/snapshot/**"]
   workflow_dispatch: # "Run workflow" button on the Actions tab
 
 permissions:
