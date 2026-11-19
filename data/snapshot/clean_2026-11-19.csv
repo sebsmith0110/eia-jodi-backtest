@@ -1771,11 +1771,13 @@ month,flow,source,value_kbd,assessment_code,days_covered
 2026-07-01,imports,jodi,6224.0968,1,
 2026-08-01,exports,eia_monthly,3992.0,,
 2026-08-01,exports,eia_weekly,3807.8709677419356,,31
-2026-08-01,exports,jodi,3819.5161,2,
+2026-08-01,exports,jodi,3991.8065,1,
 2026-08-01,imports,eia_monthly,6594.0,,
 2026-08-01,imports,eia_weekly,6725.548387096775,,31
-2026-08-01,imports,jodi,6709.0,1,
+2026-08-01,imports,jodi,6594.1935,1,
 2026-09-01,exports,eia_weekly,3975.5666666666666,,30
+2026-09-01,exports,jodi,4020.5,1,
 2026-09-01,imports,eia_weekly,6397.566666666667,,30
+2026-09-01,imports,jodi,6398.0,1,
 2026-10-01,exports,eia_weekly,4153.935483870968,,31
 2026-10-01,imports,eia_weekly,6202.032258064516,,31
