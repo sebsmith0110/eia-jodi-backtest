@@ -8,10 +8,7 @@ dependencies = [
     "fastexcel>=0.21.0",
     "plotly>=7.1.0",
     "polars>=2.1.0",
-    "psycopg[binary]>=3.3.9",
-    "python-dotenv>=1.2.4",
     "requests>=2.34.2",
-    "sqlalchemy>=2.1.8",
     "streamlit>=1.67.0",
 ]
 

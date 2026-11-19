@@ -1,13 +1,20 @@
-"""Pipeline entry point: python -m etl.run (locally, in Docker, and on ECS)."""
+"""Full pipeline in one command: python -m etl.run
 
-from etl import extract, load, quality, transform
+Downloads both sources, builds the clean table, runs the quality checks and
+saves the dashboard snapshot. A failed check stops the run before the snapshot
+is written, so the dashboard keeps its last good data.
+"""
+
+from etl import extract, quality, snapshot, transform
 
 
 def main() -> None:
+    """Run every stage in order."""
     extract.run()
     clean = transform.run()
     quality.run(clean)
-    load.run(clean)
+    path = snapshot.save(clean, transform.get_latest_raw_dir("jodi").name)
+    print(f"Wrote {path}" if path else "Snapshot unchanged, nothing written")
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 """Save and read a committed snapshot of the clean table.
 
 The raw downloads are too big for git, so the hosted dashboard reads this small
-CSV instead. Refresh it after a new download: python -m etl.snapshot
+CSV instead. The daily Refresh data workflow rebuilds it; by hand: python -m etl.snapshot
 """
 
 from pathlib import Path

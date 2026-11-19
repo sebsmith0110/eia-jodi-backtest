@@ -1,7 +1,7 @@
 """Score early EIA figures against JODI: differences, bias, accuracy and anomalies.
 
 Takes the clean table from transform.run(). Every function is pure (DataFrame in,
-DataFrame out), so the dashboard and load.py use the same tested numbers.
+DataFrame out), so the dashboard and tests use the same numbers.
 Differences are always EIA minus JODI: positive means EIA overestimated.
 """
 

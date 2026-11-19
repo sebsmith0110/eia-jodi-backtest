@@ -14,7 +14,7 @@ wheels/
 .ruff_cache/
 .DS_Store
 
-# Local data and secrets (raw downloads live in S3 in production)
+# Raw downloads are too big for git; the hosted dashboard reads the snapshot
 data/*
 !data/.gitkeep
 # Small clean-table snapshot the hosted dashboard reads (etl/snapshot.py)

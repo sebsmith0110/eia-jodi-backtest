@@ -13,13 +13,13 @@ How well do early-released EIA figures for US crude oil imports and exports line
 ## Pipeline
 
 ```
-extract   -> raw files saved untouched to raw/<source>/<download date>/
-transform -> one long table: month, flow, source, value_kbd
+extract   -> raw files saved untouched to data/raw/<source>/<download date>/, only when they changed
+transform -> one long table: month, flow, source, value_kbd (EIA weekly averaged into calendar months)
 quality   -> schema, units, duplicates, gaps, ranges, freshness
-load      -> Postgres: clean table, metrics, run log
+snapshot  -> data/snapshot/clean_<download date>.csv, rewritten only when the numbers changed
 ```
 
-In production the same code runs as a scheduled ECS Fargate task (EventBridge, weekly after EIA's Wednesday release), with raw files in S3 and Postgres on RDS.
+The **Refresh data** GitHub Actions workflow runs extract and snapshot every day at 07:00 UTC (or on demand from the Actions tab) and commits the snapshot when it changes. That commit redeploys the dashboard on Streamlit Community Cloud, which reads the snapshot because the raw downloads aren't in git. Run locally, the dashboard builds the table straight from the newest raw download.
 
 ## Layout
 
@@ -27,16 +27,18 @@ In production the same code runs as a scheduled ECS Fargate task (EventBridge, w
 etl/        pipeline stages + config.py (source URLs and series IDs)
 app/        Streamlit dashboard
 tests/      pytest
-Dockerfile  ETL image for ECS
+.github/    CI (tests on every push) and the daily data refresh
 ```
 
 ## Running locally
 
 ```bash
-uv sync                          # install dependencies
-uv run pytest                    # tests
-uv run python -m etl.run         # run the pipeline
+uv sync                                    # install dependencies
+uv run pytest                              # tests
+uv run python -m etl.extract               # download new data
+uv run python -m etl.snapshot              # rebuild the snapshot from the newest download
+uv run python -m etl.run                   # all stages, quality checks included
 uv run streamlit run app/streamlit_app.py
 ```
 
-Settings come from environment variables; see `.env.example`.
+Set `DATA_DIR` to keep data somewhere other than `data/`.

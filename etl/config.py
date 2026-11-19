@@ -4,23 +4,13 @@ import os
 import re
 from pathlib import Path
 
-from dotenv import load_dotenv
-
-# Read .env locally. Never overrides variables already set, so on ECS the task
-# definition / Secrets Manager values win (and .env isn't in the image anyway).
-load_dotenv()
-
-# Where raw downloads land locally. Mirrors the S3 layout: raw/<source>/<download date>/
+# Where raw downloads land: raw/<source>/<download date>/. Override with the
+# DATA_DIR environment variable, e.g. to test against a throwaway folder.
 DATA_DIR = Path(os.getenv("DATA_DIR", "data"))
 RAW_DIR = DATA_DIR / "raw"
 # Committed copy of the clean table, so the dashboard runs where raw data isn't
 # available (Streamlit Community Cloud). File name: clean_<download date>.csv
 SNAPSHOT_DIR = DATA_DIR / "snapshot"
-
-# Postgres connection: local Docker in development, RDS in production.
-DATABASE_URL = os.getenv(
-    "DATABASE_URL", "postgresql+psycopg://postgres:postgres@localhost:5432/backtest"
-)
 
 # --- JODI Oil World Database --------------------------------------------------
 # Annual "Primary" CSVs, no login needed.
