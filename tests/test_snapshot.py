@@ -30,6 +30,15 @@ def clean_table(latest_value: float | None = None) -> pl.DataFrame:
     )
 
 
+def current(snapshot_dir) -> list[str]:
+    """Names of the snapshot files the dashboard reads (not the archive)."""
+    return sorted(p.name for p in snapshot_dir.glob("clean_*.csv"))
+
+
+MORNING = dt.datetime(2026, 11, 16, 7, 4, 12, tzinfo=dt.UTC)
+NEXT_WEEK = dt.datetime(2026, 11, 23, 7, 3, 55, tzinfo=dt.UTC)
+
+
 def test_round_trip_keeps_values_and_types(snapshot_dir):
     snapshot.save(clean_table(), "2026-11-16")
 
@@ -44,14 +53,14 @@ def test_changed_table_replaces_the_older_snapshot(snapshot_dir):
     snapshot.save(clean_table(), "2026-11-09")
     snapshot.save(clean_table(latest_value=6400.0), "2026-11-16")
 
-    assert [p.name for p in snapshot_dir.iterdir()] == ["clean_2026-11-16.csv"]
+    assert current(snapshot_dir) == ["clean_2026-11-16.csv"]
 
 
 def test_unchanged_table_keeps_the_older_snapshot(snapshot_dir):
     snapshot.save(clean_table(), "2026-11-09")
 
     assert snapshot.save(clean_table(), "2026-11-16") is None
-    assert [p.name for p in snapshot_dir.iterdir()] == ["clean_2026-11-09.csv"]
+    assert current(snapshot_dir) == ["clean_2026-11-09.csv"]
 
 
 def test_windows_line_endings_still_count_as_unchanged(snapshot_dir):
@@ -66,3 +75,44 @@ def test_windows_line_endings_still_count_as_unchanged(snapshot_dir):
 def test_load_fails_clearly_without_a_snapshot(snapshot_dir):
     with pytest.raises(FileNotFoundError, match="snapshot"):
         snapshot.load()
+
+
+# --- archive -------------------------------------------------------------------
+
+
+def test_every_saved_snapshot_is_archived_by_save_time(snapshot_dir):
+    snapshot.save(clean_table(), "2026-11-16", saved_at=MORNING)
+    snapshot.save(clean_table(latest_value=6400.0), "2026-11-23", saved_at=NEXT_WEEK)
+
+    assert [p.name for p in snapshot.archived()] == [
+        "clean_2026-11-16_070412.csv",
+        "clean_2026-11-23_070355.csv",
+    ]
+    assert current(snapshot_dir) == ["clean_2026-11-23.csv"]
+
+
+def test_an_archived_snapshot_reads_back_as_it_was(snapshot_dir):
+    snapshot.save(clean_table(), "2026-11-16", saved_at=MORNING)
+    snapshot.save(clean_table(latest_value=6400.0), "2026-11-23", saved_at=NEXT_WEEK)
+
+    first = snapshot.read(snapshot.archived()[0])
+
+    assert first.equals(clean_table())
+    assert first.schema == OUTPUT_SCHEMA
+
+
+def test_an_unchanged_table_adds_nothing_to_the_archive(snapshot_dir):
+    snapshot.save(clean_table(), "2026-11-16", saved_at=MORNING)
+    snapshot.save(clean_table(), "2026-11-23", saved_at=NEXT_WEEK)
+
+    assert len(snapshot.archived()) == 1
+
+
+def test_load_reads_the_current_snapshot_not_the_archive(snapshot_dir):
+    snapshot.save(clean_table(), "2026-11-16", saved_at=MORNING)
+    snapshot.save(clean_table(latest_value=6400.0), "2026-11-23", saved_at=NEXT_WEEK)
+
+    clean, downloaded = snapshot.load()
+
+    assert downloaded == "2026-11-23"
+    assert clean["value_kbd"][1] == 6400.0

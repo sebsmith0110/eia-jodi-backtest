@@ -18,6 +18,7 @@ transform -> one long table: month, flow, source, value_kbd (EIA weekly averaged
 quality   -> schema, duplicates, gaps, nulls, value range, rows never shrinking, sources on time;
              row counts and results appended to data/logs/counts.csv and checks.csv
 snapshot  -> data/snapshot/clean_<download date>.csv, rewritten only when the numbers changed
+             every saved snapshot also kept in data/snapshot/archive/clean_<saved UTC>.csv
 ```
 
 The **Refresh data** GitHub Actions workflow runs extract and snapshot every day at 07:00 UTC (or on demand from the Actions tab) and commits the snapshot when it changes. That commit redeploys the dashboard on Streamlit Community Cloud, which reads the snapshot because the raw downloads aren't in git. Run locally, the dashboard builds the table straight from the newest raw download.

@@ -53,7 +53,7 @@ jobs:
           if git diff --cached --quiet -- data/snapshot; then
             git commit -m "data: daily check $(date -u +%Y-%m-%d)"
           else
-            git commit -m "data: refresh snapshot ($(ls data/snapshot | sed 's/clean_//; s/.csv//'))"
+            git commit -m "data: refresh snapshot ($(basename data/snapshot/clean_*.csv .csv | sed 's/clean_//'))"
           fi
           # Someone may have pushed while this ran
           git pull --rebase
