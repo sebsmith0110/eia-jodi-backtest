@@ -1,10 +1,10 @@
 {
-  "checked_at": "2026-11-25T17:40:49Z",
+  "checked_at": "2026-11-26T17:24:19Z",
   "passed": true,
   "sources": {
     "eia_weekly": {
-      "latest": "2026-11-13",
-      "released": "2026-11-18",
+      "latest": "2026-11-20",
+      "released": "2026-11-25",
       "late": false
     },
     "eia_monthly": {
